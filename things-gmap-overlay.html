@@ -1,0 +1,267 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+
+<!-- <link rel="import" href="../google-apis/google-maps-api.html"> -->
+<!-- <link rel="import" href="../google-map/google-map.html"> -->
+
+<link rel="import" href="../things-scene-viewer/things-scene-viewer.html">
+<link rel="import" href="../things-scene-viewer/things-scene-layer.html">
+<link rel="import" href="../things-scene-viewer/things-scene-handler.html">
+
+<link rel="import" href="./elements.html">
+
+<!--
+An element providing a solution to no problem in particular.
+
+Example:
+
+    <things-gmap-overlay></things-gmap-overlay>
+
+Example:
+
+    <things-gmap-overlay>
+      <h2>Hello things-gmap-overlay</h2>
+    </things-gmap-overlay>
+
+@demo demo/index-gmap-overlay.html
+@hero hero.svg
+-->
+
+<dom-module id="things-gmap-overlay">
+  <template>
+    <style>
+      :host {
+        display: block;
+        @apply(--things-gmap-overlay)
+      }
+      #map {
+        @apply(--things-gmap-overlay-map)
+      }
+    </style>
+
+    <content></content>
+
+<!--
+    <google-maps-api version="3.exp"></google-maps-api>
+
+    <google-map id="map"
+                latitude="[[center.lat]]"
+                longitude="[[center.lng]]"
+                map-type="roadmap"
+                map="{{map}}"
+                zoom="{{zoom}}">
+    </google-map>
+ -->
+    <div id="map"></div>
+
+  </template>
+
+  <script src="https://maps.googleapis.com/maps/api/js"></script>
+  <script src="./things-scene-gmap.js"></script>
+
+  <script>
+    Polymer({
+      is: 'things-gmap-overlay',
+
+      properties: {
+        overlay: Object,
+        context: Object,
+        scene: Object,
+        model: Object,
+        map: Object,
+        center: {
+          type: Object,
+          value: {
+            lat: 39.3,
+            lng: 55.8
+          }
+        },
+        zoom: {
+          type: Number,
+          value: 2
+        },
+        resolutionScale: {
+          type: Number,
+          value: window.devicePixelRatio || 1
+        }
+      },
+
+      observers: [
+        "_onModelChanged(model)"
+      ],
+
+      _onModelChanged: function(model) {
+        // if(!this.scene || this.overlay)
+        if(this.overlay)
+          return
+
+        var mapOptions = {
+          zoom: this.zoom,
+          center: new google.maps.LatLng(this.center.lat, this.center.lng),
+          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          styles: [
+            {
+              stylers: [{saturation: -85}]
+            }, {
+              featureType: "water",
+              elementType: "geometry",
+              stylers: [
+                { lightness: -20 }
+              ]
+            }
+          ]
+        };
+
+        var mapDiv = document.getElementById('map');
+        this.map = new google.maps.Map(mapDiv, mapOptions);
+
+
+        var viewer = document.createElement("things-scene-viewer");
+
+        viewer.innerHTML = '<things-scene-layer type="selection-layer"></things-scene-layer>'
+          + '<things-scene-layer type="guide-layer"></things-scene-layer>'
+          + '<things-scene-layer type="modeling-layer"></things-scene-layer>'
+          + '<things-scene-layer type="shift-layer"></things-scene-layer>'
+          + '<things-scene-handler type="text-editor"></things-scene-handler>'
+          + '<things-scene-handler type="move-handler"></things-scene-handler>'
+
+        viewer.model = this.model;
+        this.scene = viewer.scene;
+        viewer.mode = "1";
+
+        viewer.style.position = 'absolute';
+        viewer.style.top = 0;
+        viewer.style.left = 0;
+        // canvas.style.pointerEvents = 'none';
+
+        this.overlay = new GmapOverlay({
+          map: this.map,
+          resizeHandler: this.resize.bind(this),
+          updateHandler: this.update.bind(this),
+          resolutionScale: this.resolutionScale,
+          paneName: 'overlayMouseTarget',
+          element: viewer
+        });
+      },
+
+      // Element Lifecycle
+
+      ready: function() {
+      },
+
+      attached: function() {
+      },
+
+      detached: function() {
+      },
+
+      // Element Behavior
+
+      resize: function() {},
+      update: function() {
+        if(!this.scene)
+          return
+
+        // scale is just 2^zoom
+        // If this.overlay is scaled (with resolutionScale), we need to scale by
+        // the same amount to account for the larger canvas.
+        var scale = Math.pow(2, this.map.zoom) * this.resolutionScale;
+        this.scene.scale(scale, scale);
+        /* If the map was not translated, the topLeft corner would be 0,0 in
+         * world coordinates. Our translation is just the vector from the
+         * world coordinate of the topLeft corder to 0,0.
+         */
+
+        var mapProjection = this.map.getProjection();
+
+        var offset = mapProjection.fromLatLngToPoint(this.overlay.topLeft);
+        this.scene.root().set('translate', {x: -offset.x * scale, y: -offset.y * scale});
+
+        // this.scene.root().draw(context)
+      },
+
+      update2: function() {
+        if(!this.scene)
+          return
+
+        var context = this.overlay._element.getContext('2d')
+
+        // clear previous canvas contents
+        var canvasWidth = this.overlay._element.width;
+        var canvasHeight = this.overlay._element.height;
+
+        context.clearRect(0, 0, canvasWidth, canvasHeight)
+        /* We need to scale and translate the map for current view.
+         * see https://developers.google.com/maps/documentation/javascript/maptypes#MapCoordinates
+         */
+
+        /**
+         * Clear transformation from last update by setting to identity matrix.
+         * Could use context.resetTransform(), but most browsers don't support
+         * it yet.
+         */
+        context.setTransform(1, 0, 0, 1, 0, 0);
+
+        // scale is just 2^zoom
+        // If this.overlay is scaled (with resolutionScale), we need to scale by
+        // the same amount to account for the larger canvas.
+        var scale = Math.pow(2, this.map.zoom) * this.resolutionScale;
+        context.scale(scale, scale);
+        /* If the map was not translated, the topLeft corner would be 0,0 in
+         * world coordinates. Our translation is just the vector from the
+         * world coordinate of the topLeft corder to 0,0.
+         */
+
+        var mapProjection = this.map.getProjection();
+
+        var offset = mapProjection.fromLatLngToPoint(this.overlay.topLeft);
+        context.translate(-offset.x, -offset.y);
+
+        this.scene.root().draw(context)
+
+        // if(!p) {
+        //   p = scene.create({
+        //     target: 'scene',
+        //     model: model
+        //   });
+
+        //   var components = p.findAll(function(component) {
+        //     return component.get('type') != 'model-layer'
+        //   })
+
+        //   components.forEach(function(component) {
+        //     var bounds = component.bounds
+        //     var worldPoint = mapProjection.fromLatLngToPoint(new google.maps.LatLng(bounds.top, bounds.left));
+
+        //     component.bounds = {
+        //       left: worldPoint.x,
+        //       top: worldPoint.y,
+        //       width: bounds.width,
+        //       height: bounds.height
+        //     }
+        //   })
+
+        //   var rect = p.findAll('rect')[0]
+        //   var rotation = rect.get('rotation')
+        //   setInterval(function() {
+        //     rotation += 0.1
+        //     rect.set('rotation', rotation)
+        //     p.root().draw(context)
+        //   }, 100)
+        // }
+
+        // p.root().draw(context)
+      }
+
+    });
+  </script>
+</dom-module>
