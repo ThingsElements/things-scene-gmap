@@ -167,6 +167,26 @@ var GmapOverlay = function (_google$maps$OverlayV) {
       }
 
       panes[this._paneName].appendChild(this._element);
+
+      var self = this;
+
+      var listener = function listener(e) {
+        if (self._element.scene.mode() === 1) event.stopPropagation();
+      };
+
+      ['mousemove', 'dragstart', 'drag', 'dragend'].forEach(function (event) {
+        google.maps.event.addDomListener(self._element, 'mousemove', listener);
+      });
+      // var self = this
+      // google.maps.event.addDomListener(this._element, 'mousemove', function(event) {
+      //   // stop click reaction on another layers
+      //   event.stopPropagation();
+
+      //   console.log('click')
+
+      //   // add also event to 3rd parameter for catching
+      //   // google.maps.event.trigger(self, 'click', event);
+      // });
     }
 
     /**
