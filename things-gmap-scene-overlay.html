@@ -73,14 +73,16 @@ Example:
                          scene="{{scene}}"
                          model="[[model]]">
       <things-scene-layer type="selection-layer"></things-scene-layer>
-      <!-- <things-scene-layer type="guide-layer"></things-scene-layer> -->
       <things-scene-layer type="modeling-layer"></things-scene-layer>
-      <things-scene-layer type="shift-layer"></things-scene-layer>
+
       <things-scene-handler type="text-editor"></things-scene-handler>
       <things-scene-handler type="move-handler"></things-scene-handler>
+      <things-scene-handler type="gmap-shift"></things-scene-handler>
     </things-scene-viewer>
 
   </template>
+
+  <script src="./things-scene-gmap.js"></script>
 
   <script>
 
@@ -188,7 +190,10 @@ Example:
 
         this.$.scene.disposeWhenDetached = false
         panes[this.pane].appendChild(this.$.scene);
-        this.$.scene.disposeWhenDetached = true
+        this.async(function() {
+          // safari에서의 동작을 위해서, defered 시킴.
+          this.$.scene.disposeWhenDetached = true
+        }, 10)
 
         var self = this;
 
@@ -327,7 +332,6 @@ Example:
 
         var offset = mapProjection.fromLatLngToPoint(this._topLeft);
         this.scene.root().set('translate', {x: -offset.x * scale, y: -offset.y * scale});
-
       },
 
       // Element Behavior

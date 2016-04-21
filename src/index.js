@@ -1,3 +1,1 @@
-export { default as GmapOverlay } from './gmap-overlay'
-
-window.GmapOverlay = exports.GmapOverlay
+export { default as GmapShiftHandler } from './gmap-shift-handler'
