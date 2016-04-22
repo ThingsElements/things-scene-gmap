@@ -17,7 +17,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <script src="../../webcomponentsjs/webcomponents-lite.min.js"></script>
 
     <link rel="import" href="../things-gmap-scene-overlay.html">
-
   </head>
   <body unresolved>
 
@@ -38,6 +37,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <p>An example of <code>&lt;things-gmap-scene-overlay&gt;</code>:</p>
 
       <things-gmap-scene-overlay model="[[model]]">
+        <things-scene-layer type="selection-layer"></things-scene-layer>
+        <things-scene-layer type="modeling-layer"></things-scene-layer>
+
+        <things-scene-handler type="text-editor"></things-scene-handler>
+        <things-scene-handler type="move-handler"></things-scene-handler>
+        <things-scene-handler type="gmap-shift"></things-scene-handler>
       </things-gmap-scene-overlay>
 
       <things-gmap-scene-overlay model="[[model2]]">

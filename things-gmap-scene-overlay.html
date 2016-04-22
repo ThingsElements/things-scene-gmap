@@ -56,8 +56,6 @@ Example:
       }
     </style>
 
-    <content></content>
-
     <google-maps-api id="api" version="3.exp"></google-maps-api>
 
     <google-map id="map"
@@ -73,12 +71,8 @@ Example:
                          mode="{{mode}}"
                          scene="{{scene}}"
                          model="[[model]]">
-      <things-scene-layer type="selection-layer"></things-scene-layer>
-      <things-scene-layer type="modeling-layer"></things-scene-layer>
-
-      <things-scene-handler type="text-editor"></things-scene-handler>
-      <things-scene-handler type="move-handler"></things-scene-handler>
-      <things-scene-handler type="gmap-shift"></things-scene-handler>
+      <content select="things-scene-layer"></content>
+      <content select="things-scene-handler"></content>
     </things-scene-viewer>
 
   </template>
