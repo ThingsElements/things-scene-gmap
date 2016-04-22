@@ -25,8 +25,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <style is="custom-style">
       :root{
         --things-gmap-scene-overlay: {
-          width: 640;
-          height: 480px;
+          width: 320;
+          height: 240px;
         }
         --things-gmap-scene-overlay-map: {
           width: 100%;
@@ -38,6 +38,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <p>An example of <code>&lt;things-gmap-scene-overlay&gt;</code>:</p>
 
       <things-gmap-scene-overlay model="[[model]]">
+      </things-gmap-scene-overlay>
+
+      <things-gmap-scene-overlay model="[[model2]]">
       </things-gmap-scene-overlay>
 
     </template>
@@ -102,7 +105,65 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }]
         };
 
+        var model2 = {
+          components: [{
+            type: 'text',
+            top: 65,
+            left: 200,
+            width: 10,
+            height: 10,
+            textAlign: 'left',
+            fontSize: 1,
+            fontFamily: 'serif',
+            text: '이 예제에서는 맵뷰어를 설명합니다'
+          }, {
+            type: 'rect',
+            id: 'first',
+            name: '첫번째 사각형',
+            left: 150,
+            top: 50,
+            rotation: 10,
+            width: 20,
+            height: 20,
+            lineWidth: 0.1,
+            strokeStyle: '#000000',
+            fillStyle: '#FF0000',
+            alpha: 0.5
+          }, {
+            type: 'ellipse',
+            name: 'select layer 테스트용 원',
+            cx: 200,
+            cy: 70,
+            rotation: 0,
+            rx: 16,
+            ry: 16,
+            lineWidth: 0.1,
+            strokeStyle: '#000000',
+            fillStyle: '#00FF00',
+            alpha: 0.3
+          }, {
+            type: 'polygon',
+            path: [{x:178, y:120}, {x:185, y:129}, {x:192, y:131}, {x:187, y:120}, {x:182, y:119}, {x:180, y:117}],
+            rotation: 0,
+            strokeStyle: '#000000',
+            fillStyle: '#FF00FF',
+            lineWidth: 0.1,
+            alpha: 0.5
+          }, {
+            type: 'line',
+            name: 'select layer 테스트용 라인',
+            x1: 260,
+            y1: 30,
+            x2: 270,
+            y2: 45,
+            strokeStyle: '#000000',
+            lineWidth: 0.5
+          }]
+        };
+
         app.model = model
+        app.model2 = model2
+
       });
     </script>
 

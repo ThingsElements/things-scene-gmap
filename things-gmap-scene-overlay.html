@@ -168,15 +168,24 @@ Example:
         if(GmapSceneOverlay)
           return
 
-        var overlay = function(){}
+        var overlay = function(target){
+          this.target = target
+        }
 
         var api = e.target.api
+        var self = this
 
         overlay.prototype = new api.OverlayView()
 
-        overlay.prototype.onAdd = this._onAdd.bind(this)
-        overlay.prototype.onRemove = this._onRemove.bind(this)
-        overlay.prototype.draw = this._draw.bind(this)
+        overlay.prototype.onAdd = function() {
+          self._onAdd.call(this.target)
+        }
+        overlay.prototype.onRemove = function() {
+          self._onRemove.call(this.target)
+        }
+        overlay.prototype.draw = function() {
+          self._draw.call(this.target)
+        }
 
         GmapSceneOverlay = overlay
       },
@@ -349,7 +358,7 @@ Example:
         if(!GmapSceneOverlay || !this.scene || !this.map || this.overlay)
           return
 
-        this.overlay = new GmapSceneOverlay()
+        this.overlay = new GmapSceneOverlay(this)
         this.overlay.setMap(this.map)
       }
 
