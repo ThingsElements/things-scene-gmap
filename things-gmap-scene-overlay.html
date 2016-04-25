@@ -123,7 +123,10 @@ Example:
           type: Object,
           notify: true
         },
-        map: Object,
+        map: {
+          type: Object,
+          notify: true
+        },
         mode: {
           type: Number,
           value: 1
@@ -157,17 +160,6 @@ Example:
       listeners: {
         "api.api-load": "_onApiLoad",
         "map.google-map-ready": "_onMapReady"
-      },
-
-      // Element Lifecycle
-
-      ready: function() {
-      },
-
-      attached: function() {
-      },
-
-      detached: function() {
       },
 
       // Methods for Google Overlay inheritance
