@@ -61,10 +61,11 @@ Example:
     <google-map id="map"
                 latitude="[[center.lat]]"
                 longitude="[[center.lng]]"
-                map-type="roadmap"
+                map-type="[[mapType]]"
                 map="{{map}}"
                 zoom="{{zoom}}"
-                min-zoom="2">
+                min-zoom="2"
+                disable-default-ui="[[disableDefaultUi]]">
     </google-map>
 
     <things-scene-viewer id="scene"
@@ -150,6 +151,14 @@ Example:
         pane: {
           type: String,
           value: 'overlayMouseTarget'
+        },
+        mapType: {
+          type: String,
+          value: 'roadmap'
+        },
+        disableDefaultUi: {
+          type: Boolean,
+          value: false
         }
       },
 
