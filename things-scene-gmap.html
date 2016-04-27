@@ -10,6 +10,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 <link rel="import" href="../polymer/polymer.html">
 
+<link rel="import" href="../paper-button/paper-button.html">
+
+<link rel="import" href="../google-apis/google-maps-api.html">
+<link rel="import" href="../google-map/google-map.html">
+
+<link rel="import" href="../things-scene-viewer/things-scene-viewer.html">
+<link rel="import" href="../things-scene-viewer/things-scene-layer.html">
+<link rel="import" href="../things-scene-viewer/things-scene-handler.html">
+
 <!--
 An element providing a solution to no problem in particular.
 
@@ -19,9 +28,14 @@ Example:
 
 Example:
 
-    <things-scene-gmap>
-      <h2>Hello things-scene-gmap</h2>
-    </things-scene-gmap>
+  <things-scene-gmap model="[[model]]">
+    <things-scene-layer type="selection-layer"></things-scene-layer>
+    <things-scene-layer type="modeling-layer"></things-scene-layer>
+
+    <things-scene-handler type="text-editor"></things-scene-handler>
+    <things-scene-handler type="move-handler"></things-scene-handler>
+    <things-scene-handler type="gmap-shift"></things-scene-handler>
+  </things-scene-gmap>
 
 @demo demo/index.html
 @hero hero.svg
@@ -32,120 +46,549 @@ Example:
     <style>
       :host {
         display: block;
-        box-sizing: border-box;
+        @apply(--things-scene-gmap)
+
+        --things-icon-button:{
+          background:url(./images/icon-button.png) 50% 1px no-repeat;
+          border-bottom:2px solid #fff;
+          border-radius:0;
+          width:30px;height:25px;
+          min-width:initial;
+          display:block;
+          float:left;
+          margin:0 5px 0 0 !important;
+        }
       }
 
-      .author img {
-        display: block;
-        float: left;
-        margin-right: 5px;
-        max-height: 100px;
-        max-width: 100px;
+      #map {
+        @apply(--things-scene-gmap-map)
       }
+
+      things-scene-viewer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        cursor: default;
+        /*pointerEvents: none;*/
+      }
+
+      .controls {
+        background-color: #fff;
+        border-radius: 2px;
+        border: 1px solid transparent;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        box-sizing: border-box;
+        font-family: Roboto;
+        font-size: 15px;
+        font-weight: 300;
+        height: 29px;
+        margin-left: 17px;
+        margin-top: 10px;
+        outline: none;
+        padding: 0 11px 0 13px;
+        text-overflow: ellipsis;
+        width: 400px;
+      }
+
+      .controls:focus {
+        border-color: #4d90fe;
+      }
+
+      #center-control {
+        width: 220px;
+      }
+
+      paper-button[icon] {
+        @apply(--things-icon-button)
+      }
+
+      #move-to-current-position{background-position:50%    1px;}
+      #move-center-to-marker{background-position:50%  -49px;}
+      #move-marker-to-center{background-position:50% -199px;}
+      #confirm{height: 25px;}
+
     </style>
 
-    <h1>&lt;things-scene-gmap&gt;</h1>
-    <content></content>
-    <p class="author">
-      <img src$="{{author.image}}">
-      Cheers,<br/>
-      <span class="name">{{author.name}}</span>
-    </p>
+    <google-maps-api id="api" version="3.exp"></google-maps-api>
+
+    <google-map id="map"
+                latitude="[[center.lat]]"
+                longitude="[[center.lng]]"
+                map-type="[[mapType]]"
+                map="{{map}}"
+                zoom="{{zoom}}"
+                min-zoom="2"
+                disable-default-ui=true>
+    </google-map>
+
+    <google-map-marker id="location-marker"
+                       map="[[map]]"
+                       marker="{{marker}}"
+                       animation="DROP"
+                       latitude="{{center.lat}}"
+                       longitude="{{center.lng}}"
+                       title="[[address]]"
+                       draggable="true">
+      <p>이 마커를 드래그해서 중심 위치를 옮길 수 있습니다</p>
+    </google-map-marker>
+
+    <div id="center-control" class="controls">
+      <paper-button id="move-to-current-position" icon></paper-button>
+      <paper-button id="move-center-to-marker" icon></paper-button>
+      <paper-button id="move-marker-to-center" icon></paper-button>
+      <paper-button id="confirm">확인</paper-button>
+    </div>
+
+    <input id="place-input"
+           class="controls"
+           type="text"
+           placeholder="Enter a location">
+
+    <things-scene-viewer id="scene"
+                         mode="{{mode}}"
+                         scene="{{scene}}"
+                         model="[[model]]"
+                         selected="{{selected}}"
+                         variables="{{variables}}">
+      <content select="things-scene-layer"></content>
+      <content select="things-scene-handler"></content>
+    </things-scene-viewer>
+
   </template>
 
+  <script src="./things-scene-gmap.js"></script>
+
   <script>
+
+    var GmapSceneOverlay;
+    var CSS_TRANSFORM = (function() {
+      var div = document.createElement('div');
+      var transformProps = [
+        'transform',
+        'WebkitTransform',
+        'MozTransform',
+        'OTransform',
+        'msTransform'
+      ];
+      for (var i = 0; i < transformProps.length; i++) {
+        var prop = transformProps[i];
+        if (div.style[prop] !== undefined) {
+          return prop;
+        }
+      }
+
+      return transformProps[0];
+    })();
+
     Polymer({
       is: 'things-scene-gmap',
 
       properties: {
-        /**
-         * `fancy` indicates that the element should don a monocle and tophat,
-         * while checking its pocket watch.
-         */
-        fancy: Boolean,
-
-        /**
-         * Describes the author of the element, but is really just an excuse to
-         * show off JSDoc annotations.
-         *
-         * @type {{name: string, image: string}}
-         */
-        author: {
+        overlay: Object,
+        scene: {
           type: Object,
-          // Use `value` to provide a default value for a property, by setting it
-          // on your element's prototype.
-          //
-          // If you provide a function, as we do here, Polymer will call that
-          // _per element instance_.
-          //
-          // We do that to ensure that each element gets its own copy of the
-          // value, rather than having it shared across all instances (via the
-          // prototype).
-          value: function() {
-            return {
-              name:  'Dimitri Glazkov',
-              image: 'http://addyosmani.com/blog/wp-content/uploads/2013/04/unicorn.jpg',
-            };
+          notify: true
+        },
+        model: Object,
+        variables: {
+          type: Object,
+          notify: true
+        },
+        selected: {
+          type: Object,
+          notify: true
+        },
+        map: {
+          type: Object,
+          notify: true
+        },
+        mode: {
+          type: Number,
+          value: 1
+        },
+        center: {
+          type: Object,
+          value: {
+            lat: 39.3,
+            lng: 55.8
           }
         },
+        zoom: {
+          type: Number,
+          notify: true,
+          value: 2
+        },
+        resolutionScale: {
+          type: Number,
+          value: window.devicePixelRatio || 1
+        },
+        pane: {
+          type: String,
+          value: 'overlayMouseTarget'
+        },
+        mapType: {
+          type: String,
+          value: 'roadmap'
+        },
+        // disableDefaultUi: {
+        //   type: Boolean,
+        //   value: true
+        // },
+        showCenterControl: {
+          type: Boolean,
+          value: true
+        }
       },
 
-      // Element Lifecycle
+      observers: [
+        "_onSceneChanged(scene)",
+        "_onMapChanged(map)",
+        "_onShowCenterControlChanged(showCenterControl)",
+        "_onLocationChanged(center.*)"
+      ],
 
-      ready: function() {
-        // `ready` is called after all elements have been configured, but
-        // propagates bottom-up. This element's children are ready, but parents
-        // are not.
-        //
-        // This is the point where you should make modifications to the DOM (when
-        // necessary), or kick off any processes the element wants to perform.
+      listeners: {
+        "api.api-load": "_onApiLoad",
+        "map.google-map-ready": "_onMapReady",
+        "move-to-current-position.click": "_onClickMoveToCurrentPosition",
+        "move-center-to-marker.click": "_onClickMoveCenterToMarker",
+        "move-marker-to-center.click": "_onClickMoveMarkerToCenter",
+        "confirm.click": "_onClickConfirm"
       },
 
-      attached: function() {
-        // `attached` fires once the element and its parents have been inserted
-        // into a document.
-        //
-        // This is a good place to perform any work related to your element's
-        // visual state or active behavior (measuring sizes, beginning animations,
-        // loading resources, etc).
+      _onClickConfirm: function() {
+        this.scene.root().set({
+          center: Object.assign({}, this.center),
+          zoom: this.zoom
+        })
       },
 
-      detached: function() {
-        // The analog to `attached`, `detached` fires when the element has been
-        // removed from a document.
-        //
-        // Use this to clean up anything you did in `attached`.
+      _queryAddress: function() {
+        if(!this.geocoder) {
+          if(!this.googleApi)
+            return
+          this.geocoder = new this.googleApi.Geocoder
+        }
+
+        if(!this.geocoder) {
+          this.async(function() {
+            this._queryAddress()
+          }, 2000)
+          return
+        }
+
+        var self = this
+
+        this.geocoder.geocode({'location': this.center}, function(results, status) {
+          self.address = results.length > 0 ? results[0].formatted_address : ''
+        })
+      },
+
+      _onLocationChanged: function(center) {
+        if(this.geoquery)
+          return
+
+        this.geoquery = this.async(function() {
+          this._queryAddress()
+          this.geoquery = null
+        }, 50)
+      },
+
+      _onClickMoveCenterToMarker: function(e) {
+        this.map.setCenter(this.center)
+      },
+
+      _onClickMoveMarkerToCenter: function() {
+        var center = this.map.getCenter()
+
+        this.center = {
+          lat: center.lat(),
+          lng: center.lng()
+        }
+      },
+
+      _onClickMoveToCurrentPosition: function(e) {
+        var self = this
+        function _current(position) {
+          self.center = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          }
+        }
+        navigator.geolocation.getCurrentPosition(_current)
+      },
+
+      _onShowCenterControlChanged: function(showCenterControl) {
+        if(showCenterControl)
+          this._showCenterControl()
+        else
+          this._hideCenterControl()
+      },
+
+      _onMapChanged: function(map) {
+        if(this.showCenterControl)
+          this._showCenterControl()
+      },
+
+      _showCenterControl: function() {
+        if(!this.map)
+          return
+
+        var api = this.googleApi
+        var input = this.$['place-input']
+        if(!this.autocomplete) {
+          var self = this
+          this.autocomplete = new this.googleApi.places.Autocomplete(input);
+          this.autocomplete.addListener('place_changed', function() {
+            var place = self.autocomplete.getPlace();
+            if (!place.geometry)
+              return;
+
+            if (place.geometry.viewport) {
+              self.map.fitBounds(place.geometry.viewport);
+              var center = self.map.getCenter()
+              self.center = {
+                lat: center.lat(),
+                lng: center.lng()
+              }
+            } else {
+              self.center = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng()
+              }
+
+              self.map.setZoom(17);
+            }
+          })
+        }
+
+        this.autocomplete.bindTo('bounds', this.map);
+        this.map.controls[this.googleApi.ControlPosition.TOP_LEFT].push(input);
+
+        this.map.controls[api.ControlPosition.TOP_LEFT].push(this.$['center-control']);
+
+        this.$['location-marker'].map = this.map
+      },
+
+      _hideCenterControl: function() {
+        if(!this.map)
+          return
+
+        var api = this.googleApi
+
+        index = this.map.controls[api.ControlPosition.TOP_LEFT].indexOf(this.$['center-control'])
+        this.map.controls[api.ControlPosition.TOP_LEFT].removeAt(index)
+
+        var input = this.$['place-input']
+
+        this.autocomplete.unbind('bounds', this.map);
+
+        var index = this.map.controls[api.ControlPosition.TOP_LEFT].indexOf(input)
+        this.map.controls[api.ControlPosition.TOP_LEFT].removeAt(index)
+
+        this.$['location-marker'].map = null
+      },
+
+      _onApiLoad: function(e) {
+        if(GmapSceneOverlay)
+          return
+
+        var overlay = function(target){
+          this.target = target
+        }
+
+        this.googleApi = e.target.api
+        var self = this
+
+        overlay.prototype = new this.googleApi.OverlayView()
+
+        overlay.prototype.onAdd = function() {
+          self._onAdd.call(this.target)
+        }
+        overlay.prototype.onRemove = function() {
+          self._onRemove.call(this.target)
+        }
+        overlay.prototype.draw = function() {
+          self._draw.call(this.target)
+        }
+
+        GmapSceneOverlay = overlay
+      },
+
+      // Methods for Google Overlay inheritance
+      _onAdd: function() {
+        if (this._isAdded)
+          return;
+
+        var panes = this.overlay.getPanes();
+        if (!panes[this.pane])
+          throw new Error('"' + this.pane + '" is not a valid MapPane name.');
+
+        this.$.scene.disposeWhenDetached = false
+        panes[this.pane].appendChild(this.$.scene);
+        this.async(function() {
+          // safari에서의 동작을 위해서, defered 시킴.
+          this.$.scene.disposeWhenDetached = true
+        }, 10)
+
+        var self = this;
+
+        var listener = function(e) {
+          if(self.scene.mode() === 1)
+            event.stopPropagation();
+        };
+
+        ['mousemove', 'dragstart', 'drag', 'dragend', 'dblclick', 'click', 'tap']
+        .forEach(function(event) {
+          self.googleApi.event.addDomListener(self.$.scene, event, listener)
+        })
+
+        // Handlers
+        this._resizeListener = this.googleApi.event.addListener(this.map,
+            'resize', this._resize.bind(this));
+        this._centerListener = this.googleApi.event.addListener(this.map,
+            'center_changed', this._reposition.bind(this));
+
+        this._isAdded = true
+
+        this._resize();
+        this._reposition();
+      },
+
+      _onRemove: function() {
+        if (!this._isAdded)
+          return;
+
+        this._isAdded = false;
+        this._topLeft = null;
+
+        // remove element and listeners for pan and resize from map
+        this.$.scene.parentElement.removeChild(this.$.scene);
+
+        if (this._centerListener) {
+          this.googleApi.event.removeListener(this._centerListener);
+          this._centerListener = null;
+        }
+        if (this._resizeListener) {
+          this.googleApi.event.removeListener(this._resizeListener);
+          this._resizeListener = null;
+        }
+      },
+
+      _draw: function() {
+        this._reposition();
+      },
+
+      _resize: function() {
+        if (!this._isAdded)
+          return;
+
+        var mapWidth = this.map.getDiv().offsetWidth;
+        var mapHeight = this.map.getDiv().offsetHeight;
+
+        var newWidth = mapWidth * this.resolutionScale;
+        var newHeight = mapHeight * this.resolutionScale;
+
+        var oldWidth = this.$.scene.width;
+        var oldHeight = this.$.scene.height;
+
+        // resizing may allocate a new back buffer, so do so conservatively
+        if (oldWidth !== newWidth || oldHeight !== newHeight) {
+          this.$.scene.width = newWidth;
+          this.$.scene.height = newHeight;
+
+          this._needsResize = true;
+
+          this.async(function() {
+            this._update()
+          }, 1)
+        }
+
+        // reset styling if new sizes don't match; resize of data not needed
+        if (this._cssWidth !== mapWidth ||
+            this._cssHeight !== mapHeight) {
+          this._cssWidth = mapWidth;
+          this._cssHeight = mapHeight;
+          this.$.scene.style.width = mapWidth + 'px';
+          this.$.scene.style.height = mapHeight + 'px';
+        }
+      },
+
+      _reposition: function() {
+        // TODO(bckenny): *should* only be executed on RAF, but in current browsers
+        //     this causes noticeable hitches in map and overlay relative
+        //     positioning.
+
+        // topLeft can't be calculated from map.getBounds(), because bounds are
+        // clamped to -180 and 180 when completely zoomed out. Instead, calculate
+        // left as an offset from the center, which is an unwrapped LatLng.
+        var top = this.map.getBounds().getNorthEast().lat();
+        var center = this.map.getCenter();
+        var scale = Math.pow(2, this.map.getZoom());
+        var left = center.lng() - (this._cssWidth * 180) / (256 * scale);
+
+        this._topLeft = new this.googleApi.LatLng(top, left);
+
+        // Canvas position relative to draggable map's container depends on
+        // overlayView's projection, not the map's. Have to use the center of the
+        // map for this, not the top left, for the same reason as above.
+        // https://developers.google.com/maps/documentation/javascript/reference?hl=ko#MapCanvasProjection
+        var projection = this.overlay.getProjection();
+
+        var divCenter = projection.fromLatLngToDivPixel(center);
+        var offsetX = -Math.round(this._cssWidth / 2 - divCenter.x);
+        var offsetY = -Math.round(this._cssHeight / 2 - divCenter.y);
+
+        this.$.scene.style[CSS_TRANSFORM] = 'translate(' +
+            offsetX + 'px,' + offsetY + 'px)';
+
+        this._update()
+      },
+
+      _update: function() {
+        if(!this.scene)
+          return
+
+        if (this._needsResize) {
+          this._needsResize = false;
+          this.scene.resize();
+        }
+
+        // scale is just 2^zoom
+        // If this.overlay is scaled (with resolutionScale), we need to scale by
+        // the same amount to account for the larger canvas.
+        var scale = Math.pow(2, this.map.zoom) * this.resolutionScale;
+        this.scene.scale(scale / 10, scale / 10);
+        // this.scene.scale(scale, scale);
+        /* If the map was not translated, the topLeft corner would be 0,0 in
+         * world coordinates. Our translation is just the vector from the
+         * world coordinate of the topLeft corder to 0,0.
+         */
+
+        var mapProjection = this.map.getProjection();
+
+        var offset = mapProjection.fromLatLngToPoint(this._topLeft);
+        this.scene.root().set('translate', {x: -offset.x * scale, y: -offset.y * scale});
       },
 
       // Element Behavior
 
-      /**
-       * Sometimes it's just nice to say hi.
-       *
-       * @param {string} greeting A positive greeting.
-       * @return {string} The full greeting.
-       */
-      sayHello: function(greeting) {
-        var response = greeting || 'Hello World!';
-        return 'things-scene-gmap says, ' + response;
+      _onMapReady: function() {
+        this._createOverlay()
       },
 
-      /**
-       * The `things-scene-gmap-lasers` event is fired whenever `fireLasers` is called.
-       *
-       * @event things-scene-gmap-lasers
-       * @detail {{sound: String}}
-       */
+      _onSceneChanged: function(model) {
+        this._createOverlay()
+      },
 
-      /**
-       * Attempt to destroy this element's enemies with a beam of light!
-       *
-       * Or, at least, dispatch an event in the vain hope that someone else will
-       * do the zapping.
-       */
-      fireLasers: function() {
-        this.fire('things-scene-gmap-lasers', {sound: 'Pew pew!'});
+      _createOverlay: function() {
+        if(!GmapSceneOverlay || !this.scene || !this.map || this.overlay)
+          return
+
+        this.overlay = new GmapSceneOverlay(this)
+        this.overlay.setMap(this.map)
       }
+
     });
   </script>
 </dom-module>
