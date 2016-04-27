@@ -397,14 +397,16 @@ Example:
       },
 
       _onApiLoad: function(e) {
-        if(GmapSceneOverlay)
+        this.googleApi = e.target.api
+
+        if(GmapSceneOverlay) {
           return
+        }
 
         var overlay = function(target){
           this.target = target
         }
 
-        this.googleApi = e.target.api
         var self = this
 
         overlay.prototype = new this.googleApi.OverlayView()
