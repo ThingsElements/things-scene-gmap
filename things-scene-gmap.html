@@ -246,10 +246,10 @@ Example:
       listeners: {
         "api.api-load": "_onApiLoad",
         "map.google-map-ready": "_onMapReady",
-        "move-to-current-position.click": "_onClickMoveToCurrentPosition",
-        "move-center-to-marker.click": "_onClickMoveCenterToMarker",
-        "move-marker-to-center.click": "_onClickMoveMarkerToCenter",
-        "confirm.click": "_onClickConfirm"
+        "move-to-current-position.tap": "_onClickMoveToCurrentPosition",
+        "move-center-to-marker.tap": "_onClickMoveCenterToMarker",
+        "move-marker-to-center.tap": "_onClickMoveMarkerToCenter",
+        "confirm.tap": "_onClickConfirm"
       },
 
       _onClickConfirm: function() {
@@ -383,10 +383,12 @@ Example:
 
         var input = this.$['place-input']
 
-        this.autocomplete.unbind('bounds', this.map);
+        if(this.autocomplete)
+          this.autocomplete.unbind('bounds', this.map);
 
         var index = this.map.controls[api.ControlPosition.TOP_LEFT].indexOf(input)
-        this.map.controls[api.ControlPosition.TOP_LEFT].removeAt(index)
+        if(index > -1)
+          this.map.controls[api.ControlPosition.TOP_LEFT].removeAt(index)
 
         this.$['location-marker'].map = null
 
