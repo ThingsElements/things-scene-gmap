@@ -257,7 +257,8 @@ Example:
           center: Object.assign({}, this.center),
           zoom: this.zoom
         })
-        this._update();
+        this._resize();
+        this._reposition();
       },
 
       _queryAddress: function() {
@@ -568,10 +569,12 @@ Example:
         // scale is just 2^zoom
         // If this.overlay is scaled (with resolutionScale), we need to scale by
         // the same amount to account for the larger canvas.
+
         var scale = Math.pow(2, this.map.zoom) * this.resolutionScale;
-        var ratio = this.model.zoom || 1
-        this.scene.scale(scale / ratio, scale / ratio);
-        // this.scene.scale(scale, scale);
+
+        var ratio = this.map.zoom - (this.scene.root().get('zoom') || 0)
+        var t_scale = Math.pow(2, ratio) / this.resolutionScale;
+        this.scene.scale(t_scale, t_scale);
         /* If the map was not translated, the topLeft corner would be 0,0 in
          * world coordinates. Our translation is just the vector from the
          * world coordinate of the topLeft corder to 0,0.
@@ -580,7 +583,8 @@ Example:
         var mapProjection = this.map.getProjection();
 
         var offset = mapProjection.fromLatLngToPoint(this._topLeft);
-        this.scene.root().set('translate', {x: -offset.x * scale, y: -offset.y * scale});
+        // this.scene.translate(-offset.x * t_scale, -offset.y * t_scale)
+        this.scene.translate(-offset.x * scale, -offset.y * scale)
       },
 
       // Element Behavior
