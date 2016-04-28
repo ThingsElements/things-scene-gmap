@@ -585,8 +585,15 @@ Example:
 
         var offset = mapProjection.fromLatLngToPoint(this._topLeft);
 
-        // this.scene.translate(-offset.x * t_scale, -offset.y * t_scale)
-        this.scene.translate(-offset.x * scale, -offset.y * scale)
+        var model_center = this.scene.root().get('center') || {
+          lat: 0,
+          lng: 0
+        }
+        var origin_center = new this.googleApi.LatLng(model_center.lat, model_center.lng);
+        var center_offset = mapProjection.fromLatLngToPoint(origin_center);
+        this.scene.translate(-(offset.x - center_offset.x) * scale, -(offset.y - center_offset.y) * scale)
+
+        // this.scene.translate(-offset.x * scale, -offset.y * scale)
       },
 
       // Element Behavior
