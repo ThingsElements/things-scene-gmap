@@ -149,7 +149,8 @@ Example:
                          scene="{{scene}}"
                          model="[[model]]"
                          selected="{{selected}}"
-                         variables="{{variables}}">
+                         variables="{{variables}}"
+                         values="[[values]]">
       <content select="things-scene-layer"></content>
       <content select="things-scene-handler"></content>
     </things-scene-viewer>
@@ -190,6 +191,7 @@ Example:
           notify: true
         },
         model: Object,
+        values: Object,
         variables: {
           type: Object,
           notify: true
