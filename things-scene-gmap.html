@@ -255,7 +255,7 @@ Example:
       },
 
       _onClickConfirm: function() {
-        this.scene.root().set({
+        this.scene.root.set({
           center: Object.assign({}, this.center),
           zoom: this.zoom
         })
@@ -448,7 +448,7 @@ Example:
         var self = this;
 
         var listener = function(e) {
-          if(self.scene.mode() === 1)
+          if(self.scene.mode === 1)
             event.stopPropagation();
         };
 
@@ -575,9 +575,12 @@ Example:
 
         var scale = Math.pow(2, this.map.zoom) * this.resolutionScale;
 
-        var ratio = this.map.zoom - (this.scene.root().get('zoom') || 0)
+        var ratio = this.map.zoom - (this.scene.root.get('zoom') || 0)
         var t_scale = Math.pow(2, ratio) / this.resolutionScale;
-        this.scene.scale(t_scale, t_scale);
+        this.scene.scale = {
+          x: t_scale,
+          y: t_scale
+        };
         /* If the map was not translated, the topLeft corner would be 0,0 in
          * world coordinates. Our translation is just the vector from the
          * world coordinate of the topLeft corder to 0,0.
@@ -587,13 +590,16 @@ Example:
 
         var offset = mapProjection.fromLatLngToPoint(this._topLeft);
 
-        var model_center = this.scene.root().get('center') || {
+        var model_center = this.scene.root.get('center') || {
           lat: 0,
           lng: 0
         }
         var origin_center = new this.googleApi.LatLng(model_center.lat, model_center.lng);
         var center_offset = mapProjection.fromLatLngToPoint(origin_center);
-        this.scene.translate(-(offset.x - center_offset.x) * scale, -(offset.y - center_offset.y) * scale)
+        this.scene.translate = {
+          x: -(offset.x - center_offset.x) * scale,
+          y: -(offset.y - center_offset.y) * scale
+        }
 
         // this.scene.translate(-offset.x * scale, -offset.y * scale)
       },
@@ -607,14 +613,16 @@ Example:
       _onSceneChanged: function(scene) {
         this._createOverlay()
 
-        var center = this.scene.root().get('center') || {
+        var center = this.scene.root.get('center') || {
           lat: 0,
           lng: 0
         }
-        var zoom = this.scene.root().get('zoom') || 2
+        var zoom = this.scene.root.get('zoom') || 2
 
-        this.map.setCenter(center)
-        this.map.setZoom(zoom)
+        if(this.map) {
+          this.map.setCenter(center)
+          this.map.setZoom(zoom)
+        }
       },
 
       _createOverlay: function() {
