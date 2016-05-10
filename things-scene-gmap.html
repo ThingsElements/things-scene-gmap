@@ -256,6 +256,9 @@ Example:
 
       /* 강제로 크기를 조정. */
       resize: function() {
+        if(!this.googleApi)
+          return
+
         this.googleApi.event.trigger(this.map, "resize");
       },
 
