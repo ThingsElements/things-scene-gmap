@@ -46,8 +46,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <p>An example of <code>&lt;things-scene-gmap&gt;</code>:</p>
 
       <div>
-        <things-scene-gmap model="[[model]]" map="{{map}}"
-                           show-center-control=true>
+        <things-scene-gmap model="[[model]]"
+                           map="{{map}}"
+                           show-center-control
+                           mode="1">
           <things-scene-layer type="selection-layer"></things-scene-layer>
           <things-scene-layer type="modeling-layer"></things-scene-layer>
 
@@ -66,7 +68,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         var app = document.querySelector('#app')
 
         var model = {
-          zoom: 17,
+          center: {
+            x: 300,
+            y: 300
+          },
           components: [{
             type: 'text',
             top: 65,
