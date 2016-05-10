@@ -254,7 +254,7 @@ Example:
         "confirm.tap": "_onClickConfirm"
       },
 
-      /* 강제로 크기를 조정함. */
+      /* 강제로 크기를 조정. */
       resize: function() {
         this.googleApi.event.trigger(this.map, "resize");
       },
@@ -499,7 +499,6 @@ Example:
       },
 
       _resize: function() {
-        console.log('_resize')
         if (!this._isAdded)
           return;
 
