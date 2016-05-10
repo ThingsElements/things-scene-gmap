@@ -254,7 +254,7 @@ Example:
         "confirm.tap": "_onClickConfirm"
       },
 
-      /* 강제로 크기를 조정. */
+      /* resize() 강제로 크기를 조정하는 공개 API임. */
       resize: function() {
         if(!this.googleApi)
           return
@@ -268,7 +268,6 @@ Example:
           zoom: this.zoom
         })
         this._resize();
-        this._reposition();
       },
 
       _queryAddress: function() {
@@ -474,7 +473,6 @@ Example:
         this._isAdded = true
 
         this._resize();
-        this._reposition();
       },
 
       _onRemove: function() {
@@ -575,6 +573,7 @@ Example:
         if (this._needsResize) {
           this._needsResize = false;
           this.scene.resize();
+          this._reposition();
         }
 
         // scale is just 2^zoom
