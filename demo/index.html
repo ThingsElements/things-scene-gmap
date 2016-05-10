@@ -22,28 +22,42 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     <template is="dom-bind" id="app">
       <style is="custom-style">
-      :root{
+      :root {
         --things-scene-gmap: {
-          height: 500px;
+          width: 100%;
+          height: 100%;
         }
         --things-scene-gmap-map: {
           width: 100%;
           height: 100%;
         }
       }
+
+      body: {
+        display: block;
+      }
+
+      div {
+        width: 400px;
+        height: 300px;
+      }
       </style>
 
       <p>An example of <code>&lt;things-scene-gmap&gt;</code>:</p>
 
-      <things-scene-gmap model="[[model]]"
-                         show-center-control=true>
-        <things-scene-layer type="selection-layer"></things-scene-layer>
-        <things-scene-layer type="modeling-layer"></things-scene-layer>
+      <div>
+        <things-scene-gmap model="[[model]]" map="{{map}}"
+                           show-center-control=true>
+          <things-scene-layer type="selection-layer"></things-scene-layer>
+          <things-scene-layer type="modeling-layer"></things-scene-layer>
 
-        <things-scene-handler type="text-editor"></things-scene-handler>
-        <things-scene-handler type="move-handler"></things-scene-handler>
-        <things-scene-handler type="gmap-shift"></things-scene-handler>
-      </things-scene-gmap>
+          <things-scene-handler type="text-editor"></things-scene-handler>
+          <things-scene-handler type="move-handler"></things-scene-handler>
+          <things-scene-handler type="gmap-shift"></things-scene-handler>
+        </things-scene-gmap>
+      </div>
+
+      <button>Change Bounds</button>
 
     </template>
 
@@ -109,6 +123,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         };
 
         app.model = model
+
+        document.querySelector('button').addEventListener('click', function(e) {
+          document.querySelector('div').style.width = '500px'
+          document.querySelector('things-scene-gmap').resize()
+        })
 
       });
     </script>

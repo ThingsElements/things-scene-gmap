@@ -254,6 +254,11 @@ Example:
         "confirm.tap": "_onClickConfirm"
       },
 
+      /* 강제로 크기를 조정함. */
+      resize: function() {
+        this.googleApi.event.trigger(this.map, "resize");
+      },
+
       _onClickConfirm: function() {
         this.scene.root.set({
           center: Object.assign({}, this.center),
@@ -494,6 +499,7 @@ Example:
       },
 
       _resize: function() {
+        console.log('_resize')
         if (!this._isAdded)
           return;
 
