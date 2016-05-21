@@ -8,7 +8,7 @@
   },
   "scripts": {
     "serve": "watchify src/*.js -o things-scene-gmap.js src/index.js & polyserve",
-    "build": "browserify src/index.js -o things-scene-gmap.js && uglifyjs things-scene-gmap.js -o things-scene-gmap-min.js"
+    "build": "browserify src/index.js -o things-scene-gmap.js && uglifyjs things-scene-gmap.js -m -c -o things-scene-gmap-min.js"
   },
   "repository": {
     "type": "git",
